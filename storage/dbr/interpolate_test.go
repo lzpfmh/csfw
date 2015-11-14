@@ -1,196 +1,243 @@
 package dbr
 
 import (
-	"database/sql/driver"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/gocraft/dbr/dialect"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInterpolateNil(t *testing.T) {
-	args := []interface{}{nil}
-
-	str, err := Preprocess("SELECT * FROM x WHERE a = ?", args)
-	assert.NoError(t, err)
-	assert.Equal(t, str, "SELECT * FROM x WHERE a = NULL")
-}
-
-func TestInterpolateInts(t *testing.T) {
-	args := []interface{}{
-		int(1),
-		int8(-2),
-		int16(3),
-		int32(4),
-		int64(5),
-		uint(6),
-		uint8(7),
-		uint16(8),
-		uint32(9),
-		uint64(10),
-	}
-
-	str, err := Preprocess("SELECT * FROM x WHERE a = ? AND b = ? AND c = ? AND d = ? AND e = ? AND f = ? AND g = ? AND h = ? AND i = ? AND j = ?", args)
-	assert.NoError(t, err)
-	assert.Equal(t, str, "SELECT * FROM x WHERE a = 1 AND b = -2 AND c = 3 AND d = 4 AND e = 5 AND f = 6 AND g = 7 AND h = 8 AND i = 9 AND j = 10")
-}
-
-func TestInterpolateBools(t *testing.T) {
-	args := []interface{}{true, false}
-
-	str, err := Preprocess("SELECT * FROM x WHERE a = ? AND b = ?", args)
-	assert.NoError(t, err)
-	assert.Equal(t, str, "SELECT * FROM x WHERE a = 1 AND b = 0")
-}
-
-func TestInterpolateFloats(t *testing.T) {
-	args := []interface{}{float32(0.15625), float64(3.14159)}
-
-	str, err := Preprocess("SELECT * FROM x WHERE a = ? AND b = ?", args)
-	assert.NoError(t, err)
-	assert.Equal(t, str, "SELECT * FROM x WHERE a = 0.15625 AND b = 3.14159")
-}
-
-func TestInterpolateStrings(t *testing.T) {
-	args := []interface{}{"hello", "\"hello's \\ world\" \n\r\x00\x1a"}
-
-	str, err := Preprocess("SELECT * FROM x WHERE a = ? AND b = ?", args)
-	assert.NoError(t, err)
-	assert.Equal(t, str, "SELECT * FROM x WHERE a = 'hello' AND b = '\\\"hello\\'s \\\\ world\\\" \\n\\r\\x00\\x1a'")
-}
-
-func TestInterpolateSlices(t *testing.T) {
-	args := []interface{}{[]int{1}, []int{1, 2, 3}, []uint32{5, 6, 7}, []string{"wat", "ok"}}
-
-	str, err := Preprocess("SELECT * FROM x WHERE a = ? AND b = ? AND c = ? AND d = ?", args)
-	assert.NoError(t, err)
-	assert.Equal(t, str, "SELECT * FROM x WHERE a = (1) AND b = (1,2,3) AND c = (5,6,7) AND d = ('wat','ok')")
-}
-
-type myString struct {
-	Present bool
-	Val     string
-}
-
-func (m myString) Value() (driver.Value, error) {
-	if m.Present {
-		return m.Val, nil
-	} else {
-		return nil, nil
-	}
-}
-
-func TestIntepolatingValuers(t *testing.T) {
-	args := []interface{}{myString{true, "wat"}, myString{false, "fry"}}
-
-	str, err := Preprocess("SELECT * FROM x WHERE a = ? AND b = ?", args)
-	assert.NoError(t, err)
-	assert.Equal(t, str, "SELECT * FROM x WHERE a = 'wat' AND b = NULL")
-}
-
-func TestInterpolateErrors(t *testing.T) {
-	_, err := Preprocess("SELECT * FROM x WHERE a = ? AND b = ?", []interface{}{1})
-	assert.Equal(t, err, ErrArgumentMismatch)
-
-	_, err = Preprocess("SELECT * FROM x WHERE", []interface{}{1})
-	assert.Equal(t, err, ErrArgumentMismatch)
-
-	_, err = Preprocess("SELECT * FROM x WHERE a = ?", []interface{}{string([]byte{0x34, 0xFF, 0xFE})})
-	assert.Equal(t, err, ErrNotUTF8)
-
-	_, err = Preprocess("SELECT * FROM x WHERE a = ?", []interface{}{struct{}{}})
-	assert.Equal(t, err, ErrInvalidValue)
-
-	_, err = Preprocess("SELECT * FROM x WHERE a = ?", []interface{}{[]struct{}{struct{}{}, struct{}{}}})
-	assert.Equal(t, err, ErrInvalidSliceValue)
-}
-
-func TestPreprocess(t *testing.T) {
-	var noArgs []interface{}
-	tests := []struct {
-		sql    string
-		args   []interface{}
-		expSql string
-		expErr error
+func TestInterpolateForDialect(t *testing.T) {
+	for _, test := range []struct {
+		query string
+		value []interface{}
+		want  string
 	}{
-		// NULL
-		{"SELECT * FROM x WHERE a = ?", []interface{}{nil},
-			"SELECT * FROM x WHERE a = NULL", nil},
-
-		// integers
 		{
-			`SELECT * FROM x WHERE a = ? AND b = ? AND c = ? AND d = ? AND e = ? AND f = ?
-			AND g = ? AND h = ? AND i = ? AND j = ?`,
-			[]interface{}{int(1), int8(-2), int16(3), int32(4), int64(5), uint(6), uint8(7),
-				uint16(8), uint32(9), uint64(10)},
-			`SELECT * FROM x WHERE a = 1 AND b = -2 AND c = 3 AND d = 4 AND e = 5 AND f = 6
-			AND g = 7 AND h = 8 AND i = 9 AND j = 10`, nil,
+			query: "?",
+			value: []interface{}{nil},
+			want:  "NULL",
 		},
-
-		// boolean
-		{"SELECT * FROM x WHERE a = ? AND b = ?", []interface{}{true, false},
-			"SELECT * FROM x WHERE a = 1 AND b = 0", nil},
-
-		// floats
-		{"SELECT * FROM x WHERE a = ? AND b = ?", []interface{}{float32(0.15625), float64(3.14159)},
-			"SELECT * FROM x WHERE a = 0.15625 AND b = 3.14159", nil},
-
-		// strings
 		{
-			`SELECT * FROM x WHERE a = ?
-			AND b = ?`,
-			[]interface{}{"hello", "\"hello's \\ world\" \n\r\x00\x1a"},
-			`SELECT * FROM x WHERE a = 'hello'
-			AND b = '\"hello\'s \\ world\" \n\r\x00\x1a'`, nil,
+			query: "?",
+			value: []interface{}{`'"'"`},
+			want:  "'\\'\\\"\\'\\\"'",
 		},
-
-		// slices
-		{"SELECT * FROM x WHERE a = ? AND b = ? AND c = ? AND d = ?",
-			[]interface{}{[]int{1}, []int{1, 2, 3}, []uint32{5, 6, 7}, []string{"wat", "ok"}},
-			"SELECT * FROM x WHERE a = (1) AND b = (1,2,3) AND c = (5,6,7) AND d = ('wat','ok')", nil},
-
-		// valuers
-		{"SELECT * FROM x WHERE a = ? AND b = ?",
-			[]interface{}{myString{true, "wat"}, myString{false, "fry"}},
-			"SELECT * FROM x WHERE a = 'wat' AND b = NULL", nil},
-
-		// errors
-		{"SELECT * FROM x WHERE a = ? AND b = ?", []interface{}{1},
-			"", ErrArgumentMismatch},
-
-		{"SELECT * FROM x WHERE", []interface{}{1},
-			"", ErrArgumentMismatch},
-
-		{"SELECT * FROM x WHERE a = ?", []interface{}{string([]byte{0x34, 0xFF, 0xFE})},
-			"", ErrNotUTF8},
-
-		{"SELECT * FROM x WHERE a = ?", []interface{}{struct{}{}},
-			"", ErrInvalidValue},
-
-		{"SELECT * FROM x WHERE a = ?", []interface{}{[]struct{}{struct{}{}, struct{}{}}},
-			"", ErrInvalidSliceValue},
-		{"SELECT 'hello", noArgs, "", ErrInvalidSyntax},
-		{`SELECT "hello`, noArgs, "", ErrInvalidSyntax},
-
-		// preprocessing
-		{"SELECT '?'", noArgs, "SELECT '?'", nil},
-		{"SELECT `?`", noArgs, "SELECT `?`", nil},
-		{"SELECT [?]", noArgs, "SELECT `?`", nil},
-		{"SELECT [name] FROM [user]", noArgs, "SELECT `name` FROM `user`", nil},
-		{"SELECT [u.name] FROM [user] [u]", noArgs, "SELECT `u`.`name` FROM `user` `u`", nil},
-		{"SELECT [u.na`me] FROM [user] [u]", noArgs, "SELECT `u`.`na``me` FROM `user` `u`", nil},
-		{"SELECT * FROM [user] WHERE [name] = '[nick]'", noArgs,
-			"SELECT * FROM `user` WHERE `name` = '[nick]'", nil},
-		{`SELECT * FROM [user] WHERE [name] = "nick[]"`, noArgs,
-			"SELECT * FROM `user` WHERE `name` = 'nick[]'", nil},
+		{
+			query: "? ?",
+			value: []interface{}{true, false},
+			want:  "1 0",
+		},
+		{
+			query: "? ?",
+			value: []interface{}{1, 1.23},
+			want:  "1 1.23",
+		},
+		{
+			query: "?",
+			value: []interface{}{time.Date(2008, 9, 17, 20, 4, 26, 0, time.UTC)},
+			want:  "'2008-09-17 20:04:26'",
+		},
+		{
+			query: "?",
+			value: []interface{}{[]string{"one", "two"}},
+			want:  "('one','two')",
+		},
+		{
+			query: "?",
+			value: []interface{}{[]byte{0x1, 0x2, 0x3}},
+			want:  "0x010203",
+		},
+		{
+			query: "start?end",
+			value: []interface{}{new(int)},
+			want:  "start0end",
+		},
+		{
+			query: "?",
+			value: []interface{}{Select("a").From("table")},
+			want:  "(SELECT a FROM table)",
+		},
+		{
+			query: "?",
+			value: []interface{}{I("a1").As("a2")},
+			want:  "`a1` AS `a2`",
+		},
+		{
+			query: "?",
+			value: []interface{}{Select("a").From("table").As("a1")},
+			want:  "(SELECT a FROM table) AS `a1`",
+		},
+		{
+			query: "?",
+			value: []interface{}{
+				UnionAll(
+					Select("a").From("table1"),
+					Select("b").From("table2"),
+				).As("t"),
+			},
+			want: "((SELECT a FROM table1) UNION ALL (SELECT b FROM table2)) AS `t`",
+		},
+		{
+			query: "?",
+			value: []interface{}{time.Month(7)},
+			want:  "7",
+		},
+	} {
+		s, err := InterpolateForDialect(test.query, test.value, dialect.MySQL)
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, s)
 	}
+}
 
-	for _, test := range tests {
-		str, err := Preprocess(test.sql, test.args)
-		if err != test.expErr {
-			t.Errorf("\ngot error: %v\nwant: %v", err, test.expErr)
-		}
-		if str != test.expSql {
-			t.Errorf("\ngot: %v\nwant: %v", str, test.expSql)
+// Attempts to test common SQL injection strings. See `InjectionAttempts` for
+// more information on the source and the strings themselves.
+func TestCommonSQLInjections(t *testing.T) {
+	for _, sess := range []*Session{mysqlSession} {
+		for _, injectionAttempt := range strings.Split(injectionAttempts, "\n") {
+			// Create a user with the attempted injection as the email address
+			_, err := sess.InsertInto("dbr_people").
+				Pair("name", injectionAttempt).
+				Exec()
+			assert.NoError(t, err)
+
+			// SELECT the name back and ensure it's equal to the injection attempt
+			var name string
+			err = sess.Select("name").From("dbr_people").OrderDir("id", false).Limit(1).LoadValue(&name)
+			assert.Equal(t, injectionAttempt, name)
 		}
 	}
 }
+
+// InjectionAttempts is a newline separated list of common SQL injection exploits
+// taken from https://wfuzz.googlecode.com/svn/trunk/wordlist/Injections/SQL.txt
+
+const injectionAttempts = `
+'
+"
+#
+-
+--
+'%20--
+--';
+'%20;
+=%20'
+=%20;
+=%20--
+\x23
+\x27
+\x3D%20\x3B'
+\x3D%20\x27
+\x27\x4F\x52 SELECT *
+\x27\x6F\x72 SELECT *
+'or%20select *
+admin'--
+<>"'%;)(&+
+'%20or%20''='
+'%20or%20'x'='x
+"%20or%20"x"="x
+')%20or%20('x'='x
+0 or 1=1
+' or 0=0 --
+" or 0=0 --
+or 0=0 --
+' or 0=0 #
+" or 0=0 #
+or 0=0 #
+' or 1=1--
+" or 1=1--
+' or '1'='1'--
+"' or 1 --'"
+or 1=1--
+or%201=1
+or%201=1 --
+' or 1=1 or ''='
+" or 1=1 or ""="
+' or a=a--
+" or "a"="a
+') or ('a'='a
+") or ("a"="a
+hi" or "a"="a
+hi" or 1=1 --
+hi' or 1=1 --
+hi' or 'a'='a
+hi') or ('a'='a
+hi") or ("a"="a
+'hi' or 'x'='x';
+@variable
+,@variable
+PRINT
+PRINT @@variable
+select
+insert
+as
+or
+procedure
+limit
+order by
+asc
+desc
+delete
+update
+distinct
+having
+truncate
+replace
+like
+handler
+bfilename
+' or username like '%
+' or uname like '%
+' or userid like '%
+' or uid like '%
+' or user like '%
+exec xp
+exec sp
+'; exec master..xp_cmdshell
+'; exec xp_regread
+t'exec master..xp_cmdshell 'nslookup www.google.com'--
+--sp_password
+\x27UNION SELECT
+' UNION SELECT
+' UNION ALL SELECT
+' or (EXISTS)
+' (select top 1
+'||UTL_HTTP.REQUEST
+1;SELECT%20*
+to_timestamp_tz
+tz_offset
+&lt;&gt;&quot;'%;)(&amp;+
+'%20or%201=1
+%27%20or%201=1
+%20$(sleep%2050)
+%20'sleep%2050'
+char%4039%41%2b%40SELECT
+&apos;%20OR
+'sqlattempt1
+(sqlattempt2)
+|
+%7C
+*|
+%2A%7C
+*(|(mail=*))
+%2A%28%7C%28mail%3D%2A%29%29
+*(|(objectclass=*))
+%2A%28%7C%28objectclass%3D%2A%29%29
+(
+%28
+)
+%29
+&
+%26
+!
+%21
+' or 1=1 or ''='
+' or ''='
+x' or 1=1 or 'x'='y
+/
+//
+//*
+*/*
+`

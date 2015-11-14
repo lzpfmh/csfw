@@ -1,54 +1,69 @@
 package dbr
 
 import (
+	"bytes"
 	"database/sql/driver"
-	"strings"
-
-	"github.com/juju/errgo"
+	"reflect"
+	"unicode"
 )
 
-// argsValuer checks if an argument implements driver.Valuer interface. If so
-// uses the Value() function to get the correct value.
-func argsValuer(args *[]interface{}) error {
-	for i, v := range *args {
-		if dbVal, ok := v.(driver.Valuer); ok {
-			if val, err := dbVal.Value(); err == nil {
-				(*args)[i] = val
-			} else {
-				return errgo.Mask(err)
-			}
+func camelCaseToSnakeCase(name string) string {
+	buf := new(bytes.Buffer)
+
+	runes := []rune(name)
+
+	for i := 0; i < len(runes); i++ {
+		buf.WriteRune(unicode.ToLower(runes[i]))
+		if !unicode.IsUpper(runes[i]) && i != len(runes)-1 && unicode.IsUpper(runes[i+1]) {
+			buf.WriteRune('_')
 		}
 	}
-	return nil
+
+	return buf.String()
 }
 
-// Stmt is helper for various method to check statements
-var Stmt = stmtChecker{}
-
-// stmtChecker @todo better checking ...
-type stmtChecker struct{}
-
-func (stmtChecker) startContain(sql, starts, contains string) bool {
-	sql = strings.ToLower(sql)
-	return strings.Index(sql, starts) == 0 && strings.Index(sql, contains) > 4
+func structMap(value reflect.Value) map[string]reflect.Value {
+	m := make(map[string]reflect.Value)
+	structValue(m, value)
+	return m
 }
 
-// IsSelect checks if string is a SELECT statement
-func (sc stmtChecker) IsSelect(sql string) bool {
-	return sc.startContain(sql, "select", "from")
-}
+var (
+	typeValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
+)
 
-// IsUpdate checks if string is an UPDATE statement
-func (sc stmtChecker) IsUpdate(sql string) bool {
-	return sc.startContain(sql, "update", "from")
-}
-
-// IsDelete checks if string is a DELETE statement
-func (sc stmtChecker) IsDelete(sql string) bool {
-	return sc.startContain(sql, "delete", "from")
-}
-
-// IsInsert checks if string is an INSERT statement
-func (sc stmtChecker) IsInsert(sql string) bool {
-	return sc.startContain(sql, "insert", " ")
+func structValue(m map[string]reflect.Value, value reflect.Value) {
+	if value.Type().Implements(typeValuer) {
+		return
+	}
+	switch value.Kind() {
+	case reflect.Ptr:
+		if value.IsNil() {
+			return
+		}
+		structValue(m, value.Elem())
+	case reflect.Struct:
+		t := value.Type()
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			if field.PkgPath != "" {
+				// unexported
+				continue
+			}
+			tag := field.Tag.Get("db")
+			if tag == "-" {
+				// ignore
+				continue
+			}
+			if tag == "" {
+				// no tag, but we can record the field name
+				tag = camelCaseToSnakeCase(field.Name)
+			}
+			fieldValue := value.Field(i)
+			if _, ok := m[tag]; !ok {
+				m[tag] = fieldValue
+			}
+			structValue(m, fieldValue)
+		}
+	}
 }

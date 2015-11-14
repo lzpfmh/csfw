@@ -1,48 +1,99 @@
 package dbr
 
 import (
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStmtChecker(t *testing.T) {
-	tests := []struct {
-		sel   string
-		selok bool
-		upd   string
-		updok bool
-		del   string
-		delok bool
-		ins   string
-		insok bool
+func TestSnakeCase(t *testing.T) {
+	for _, test := range []struct {
+		in   string
+		want string
 	}{
 		{
-			"SELECT ...",
-			false,
-			"UPDATE ...",
-			false,
-			"DELETE ...",
-			false,
-			"INSERT",
-			false,
+			in:   "",
+			want: "",
 		},
 		{
-			"SELECT ... From ",
-			true,
-			"UPDATE ... From ",
-			true,
-			"DELETE ...From ",
-			true,
-			"INSERT ",
-			true,
+			in:   "IsDigit",
+			want: "is_digit",
 		},
+		{
+			in:   "Is",
+			want: "is",
+		},
+		{
+			in:   "IsID",
+			want: "is_id",
+		},
+		{
+			in:   "IsSQL",
+			want: "is_sql",
+		},
+		{
+			in:   "LongSQL",
+			want: "long_sql",
+		},
+		{
+			in:   "Float64Val",
+			want: "float64_val",
+		},
+	} {
+		assert.Equal(t, test.want, camelCaseToSnakeCase(test.in))
 	}
+}
 
-	for _, test := range tests {
-		assert.Equal(t, test.selok, Stmt.IsSelect(test.sel), "%#v", test)
-		assert.Equal(t, test.updok, Stmt.IsUpdate(test.upd), "%#v", test)
-		assert.Equal(t, test.delok, Stmt.IsDelete(test.del), "%#v", test)
-		assert.Equal(t, test.insok, Stmt.IsInsert(test.ins), "%#v", test)
+func TestStructMap(t *testing.T) {
+	for _, test := range []struct {
+		in  interface{}
+		ok  []string
+		bad []string
+	}{
+		{
+			in: struct {
+				CreatedAt time.Time
+			}{},
+			ok: []string{"created_at"},
+		},
+		{
+			in: struct {
+				intVal int
+			}{},
+			bad: []string{"int_val"},
+		},
+		{
+			in: struct {
+				IntVal int `db:"test"`
+			}{},
+			ok:  []string{"test"},
+			bad: []string{"int_val"},
+		},
+		{
+			in: struct {
+				IntVal int `db:"-"`
+			}{},
+			bad: []string{"int_val"},
+		},
+		{
+			in: struct {
+				Test1 struct {
+					Test2 int
+				}
+			}{},
+			ok: []string{"test2"},
+		},
+	} {
+		m := structMap(reflect.ValueOf(test.in))
+		for _, c := range test.ok {
+			_, ok := m[c]
+			assert.True(t, ok)
+		}
+		for _, c := range test.bad {
+			_, ok := m[c]
+			assert.False(t, ok)
+		}
 	}
 }
