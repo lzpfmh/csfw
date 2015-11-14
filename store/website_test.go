@@ -167,7 +167,7 @@ func TestTableWebsiteSlice(t *testing.T) {
 }
 
 func TestTableWebsiteSliceLoad(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer func() { assert.NoError(t, dbc.Close()) }()
 	dbrSess := dbc.NewSession()
 

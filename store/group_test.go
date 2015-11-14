@@ -26,7 +26,7 @@ import (
 )
 
 func init() {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer func() {
 		if err := dbc.Close(); err != nil {
 			panic(err)
@@ -142,7 +142,7 @@ var testGroups = store.TableGroupSlice{
 }
 
 func TestTableGroupSliceLoad(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer func() { assert.NoError(t, dbc.Close()) }()
 	dbrSess := dbc.NewSession()
 

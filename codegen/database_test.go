@@ -29,7 +29,7 @@ import (
 )
 
 func init() {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 	eav.TableCollection.Init(dbc.NewSession())
 }
@@ -49,7 +49,7 @@ func TestTypeCodeValueTable(t *testing.T) {
 }
 
 func TestGetTables(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 
 	tests := []struct {
@@ -90,7 +90,7 @@ func TestGetTables(t *testing.T) {
 }
 
 func TestGetEavValueTables(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 
 	tests := []struct {
@@ -146,7 +146,7 @@ func TestColumnComment(t *testing.T) {
 }
 
 func TestGetColumns(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 
 	tests := []struct {
@@ -233,7 +233,7 @@ func TestGetColumns(t *testing.T) {
 }
 
 func TestGetFieldNames(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 
 	tests := []struct {
@@ -265,7 +265,7 @@ func TestGetFieldNames(t *testing.T) {
 
 // depends on generated code
 func TestSQLQueryToColumnsToStruct(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 
 	dbrSess := dbc.NewSession()
@@ -315,7 +315,7 @@ func TestSQLQueryToColumnsToStruct(t *testing.T) {
 }
 
 func TestGetSQLPrepareForTemplate(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 
 	resultSlice2, err := LoadStringEntities(dbc.DB, nil, "SELECT * FROM `cataloginventory_stock` ", "ORDER BY stock_id")
@@ -382,7 +382,7 @@ var benchmarkGetTables []string
 
 // BenchmarkGetTables-4	    2000	    865974 ns/op	   31042 B/op	     683 allocs/op
 func BenchmarkGetTables(b *testing.B) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 	b.ReportAllocs()
 	var err error

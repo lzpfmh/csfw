@@ -591,7 +591,7 @@ func TestNewServiceReInit(t *testing.T) {
 	t.Skip(TODO_Better_Test_Data)
 
 	// quick implement, use mock of dbr.SessionRunner and remove connection
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer func() { assert.NoError(t, dbc.Close()) }()
 	dbrSess := dbc.NewSession()
 

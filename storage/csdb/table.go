@@ -98,9 +98,8 @@ func (ts *Table) Select(dbrSess dbr.SessionRunner) (*dbr.SelectBuilder, error) {
 	if ts == nil {
 		return nil, ErrTableNotFound
 	}
-	return dbrSess.
-		Select(ts.AllColumnAliasQuote("main_table")...).
-		From(ts.Name, "main_table"), nil
+
+	return dbrSess.Select(ts.AllColumnAliasQuote("main_table")...).From(dbr.I(ts.Name).As("main_table")), nil
 }
 
 func (ts *Table) Update() {}

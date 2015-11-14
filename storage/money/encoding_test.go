@@ -245,7 +245,7 @@ type TableProductEntityDecimalSlice []*TableProductEntityDecimal
 
 func off_TestLoadFromDb(t *testing.T) {
 	//for hacking testing added :-)
-	conn := csdb.MustConnectTest()
+	conn := csdb.MustOpenTest()
 	defer conn.Close()
 	dbrSess := conn.NewSession()
 
@@ -297,7 +297,7 @@ func off_TestLoadFromDb(t *testing.T) {
 //}
 
 func TestValue(t *testing.T) {
-	dbrSess := csdb.MustConnectTest().NewSession()
+	dbrSess := csdb.MustOpenTest().NewSession()
 
 	tuple := &TableProductEntityDecimal{ValueID: 0, AttributeID: 73, StoreID: 3, EntityID: 231, Value: money.New(money.WithPrecision(4)).Set(7779933)}
 	tuple2 := &TableProductEntityDecimal{ValueID: 0, AttributeID: 74, StoreID: 2, EntityID: 231, Value: money.New(money.WithPrecision(4)).Set(8889933)}

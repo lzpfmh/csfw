@@ -66,7 +66,7 @@ func TestNewTableManagerAppend(t *testing.T) {
 }
 
 func TestNewTableManagerInit(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 	i := csdb.Index(4711)
 	tm0 := csdb.NewTableManager(csdb.AddTableByName(i, "admin_user"))

@@ -162,7 +162,7 @@ func (g *generator) initTables() {
 	if g.tts.GenericsWhiteList == "" {
 		return // do nothing because nothing defined, neither custom SQL nor to copy from SQLQuery field
 	}
-	if false == dbr.Stmt.IsSelect(g.tts.GenericsWhiteList) {
+	if false == csdb.Stmt.IsSelect(g.tts.GenericsWhiteList) {
 		// copy result from tables because select key word not found
 		g.whiteListTables = g.tables
 		return

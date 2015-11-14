@@ -80,7 +80,7 @@ func GetTables(dbrSess dbr.SessionRunner, sql ...string) ([]string, error) {
 
 	qry := "SHOW TABLES"
 	if len(sql) > 0 && sql[0] != "" {
-		if false == dbr.Stmt.IsSelect(sql[0]) {
+		if false == csdb.Stmt.IsSelect(sql[0]) {
 			qry = qry + " LIKE '" + sql[0] + "'"
 		} else {
 			qry = sql[0]

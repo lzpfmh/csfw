@@ -26,7 +26,7 @@ import (
 )
 
 func TestGetAttributeSelect(t *testing.T) {
-	db := csdb.MustConnectTest()
+	db := csdb.MustOpenTest()
 	defer db.Close()
 	dbrSess := dbr.NewConnection(db, nil).NewSession(nil)
 	et, err := eav.GetEntityTypeCollection().GetByCode("catalog_product")

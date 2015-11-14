@@ -46,7 +46,7 @@ var (
 )
 
 func init() {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 	if err := eav.TableCollection.Init(dbc.NewSession()); err != nil {
 		panic(err)
@@ -54,7 +54,7 @@ func init() {
 }
 
 func TestEntityType(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 	dbrSess := dbc.NewSession()
 
@@ -75,7 +75,7 @@ func TestEntityType(t *testing.T) {
 }
 
 func TestEntityTypeSliceGetByCode(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 	dbrSess := dbc.NewSession()
 

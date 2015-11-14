@@ -435,7 +435,7 @@ func BenchmarkStorageDefaultStoreView(b *testing.B) {
 func TestStorageReInit(t *testing.T) {
 
 	// quick implement, use mock of dbr.SessionRunner and remove connection
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer func() { assert.NoError(t, dbc.Close()) }()
 
 	nsg := store.NewStorage(nil, nil, nil)

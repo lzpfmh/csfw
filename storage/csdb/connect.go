@@ -53,23 +53,22 @@ func GetDSNTest() (string, error) {
 	return getDSN(EnvDSNTest, ErrDSNTestNotFound)
 }
 
-// Connect creates a new database connection from a DSN stored in an
+// Open creates a new database connection from a DSN stored in an
 // environment variable.
-func Connect(opts ...dbr.ConnectionOption) (*dbr.Connection, error) {
+func Open(opts ...dbr.ConnectionOption) (*dbr.Connection, error) {
 	dsn, err := GetDSN()
 	if err != nil {
 		return nil, errgo.Mask(err)
 	}
-	c, err := dbr.NewConnection(dbr.SetDSN(dsn))
-	return c.ApplyOpts(opts...), err
+	return dbr.Open(dsn, opts...)
 }
 
-// MustConnectTest is a helper function that creates a
+// MustOpenTest is a helper function that creates a
 // new database connection using environment variables.
-func MustConnectTest(opts ...dbr.ConnectionOption) *dbr.Connection {
+func MustOpenTest(opts ...dbr.ConnectionOption) *dbr.Connection {
 	dsn, err := GetDSNTest()
 	if err != nil {
 		panic(err)
 	}
-	return dbr.MustConnectAndVerify(dbr.SetDSN(dsn)).ApplyOpts(opts...)
+	return dbr.MustOpenAndVerify(dsn, opts...)
 }

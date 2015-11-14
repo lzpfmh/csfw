@@ -10,7 +10,7 @@ import (
 )
 
 func TestGetAttributeSelectSql(t *testing.T) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 
 	dbrSess := dbc.NewSession()

@@ -28,7 +28,7 @@ import (
 
 func TestGetColumns(t *testing.T) {
 	// @todo fix test data retrieving from database ...
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 	sess := dbc.NewSession()
 
@@ -309,7 +309,7 @@ var benchmarkGetColumnsHashWant = []byte{0x3b, 0x2d, 0xdd, 0xf4, 0x4e, 0x2b, 0x3
 // BenchmarkGetColumns-4	    1000	   3376128 ns/op	   24198 B/op	     196 allocs/op
 // BenchmarkGetColumns-4	    1000	   1185381 ns/op	   21861 B/op	     179 allocs/op
 func BenchmarkGetColumns(b *testing.B) {
-	dbc := csdb.MustConnectTest()
+	dbc := csdb.MustOpenTest()
 	defer dbc.Close()
 	sess := dbc.NewSession()
 	var err error

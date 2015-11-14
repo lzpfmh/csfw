@@ -38,7 +38,7 @@ type context struct {
 }
 
 func newContext() *context {
-	dbc, err := csdb.Connect()
+	dbc, err := csdb.Open()
 	codegen.LogFatal(err)
 
 	return &context{

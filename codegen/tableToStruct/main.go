@@ -27,7 +27,7 @@ var PkgLog log.Logger = log.NewStdLogger()
 
 func main() {
 	defer log.WhenDone(PkgLog).Info("Stats")
-	dbc, err := csdb.Connect()
+	dbc, err := csdb.Open()
 	codegen.LogFatal(err)
 	defer dbc.Close()
 	var wg sync.WaitGroup
