@@ -1,9 +1,10 @@
 package dialect
 
 import (
-	"bytes"
 	"fmt"
 	"time"
+
+	"github.com/corestoreio/csfw/utils/bufferpool"
 )
 
 type mysql struct{}
@@ -13,7 +14,8 @@ func (d mysql) QuoteIdent(s string) string {
 }
 
 func (d mysql) EncodeString(s string) string {
-	buf := new(bytes.Buffer)
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
 
 	buf.WriteRune('\'')
 	// https://dev.mysql.com/doc/refman/5.7/en/string-literals.html

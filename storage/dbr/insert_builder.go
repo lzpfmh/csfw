@@ -53,6 +53,7 @@ func (tx *Tx) InsertBySql(query string, value ...interface{}) *InsertBuilder {
 
 func (b *InsertBuilder) ToSql() (string, []interface{}) {
 	buf := NewBuffer()
+	defer PutBuffer(buf)
 	err := b.Build(b.Dialect, buf)
 	if err != nil {
 		panic(err)

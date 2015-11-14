@@ -1,8 +1,9 @@
 package dbr
 
 import (
-	"bytes"
 	"reflect"
+
+	"github.com/corestoreio/csfw/utils/bufferpool"
 )
 
 // InsertStmt builds `INSERT INTO ...`
@@ -33,7 +34,7 @@ func (b *InsertStmt) Build(d Dialect, buf Buffer) error {
 
 	buf.WriteString(" (")
 
-	placeholder := new(bytes.Buffer)
+	placeholder := bufferpool.Get()
 	placeholder.WriteRune('(')
 	for i, col := range b.Column {
 		if i > 0 {
@@ -56,7 +57,7 @@ func (b *InsertStmt) Build(d Dialect, buf Buffer) error {
 
 		buf.WriteValue(tuple...)
 	}
-
+	bufferpool.Put(placeholder)
 	return nil
 }
 

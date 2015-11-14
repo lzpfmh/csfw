@@ -1,25 +1,19 @@
 package dbr
 
 import (
-	"bytes"
 	"database/sql/driver"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/corestoreio/csfw/storage/dbr/dialect"
+	"github.com/corestoreio/csfw/utils/bufferpool"
 )
-
-// Don't break the API
-// FIXME: This will be removed in the future
-func Interpolate(query string, value []interface{}) (string, error) {
-	return InterpolateForDialect(query, value, dialect.MySQL)
-}
 
 // InterpolateForDialect replaces placeholder in query with corresponding value in dialect
 func InterpolateForDialect(query string, value []interface{}, d Dialect) (string, error) {
-	buf := new(bytes.Buffer)
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
 	err := interpolate(query, value, d, buf)
 	if err != nil {
 		return "", err
@@ -61,6 +55,7 @@ func interpolate(query string, value []interface{}, d Dialect, w StringWriter) e
 func encodePlaceholder(value interface{}, d Dialect, w StringWriter) error {
 	if builder, ok := value.(Builder); ok {
 		buf := NewBuffer()
+		defer PutBuffer(buf)
 		err := builder.Build(d, buf)
 		if err != nil {
 			return err

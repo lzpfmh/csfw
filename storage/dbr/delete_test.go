@@ -14,6 +14,7 @@ func TestDeleteStmt(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "DELETE FROM `table` WHERE (`a` = ?)", buf.String())
 	assert.Equal(t, []interface{}{1}, buf.Value())
+	PutBuffer(buf)
 }
 
 func BenchmarkDeleteSQL(b *testing.B) {
@@ -21,4 +22,5 @@ func BenchmarkDeleteSQL(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		DeleteFrom("table").Where(Eq("a", 1)).Build(dialect.MySQL, buf)
 	}
+	PutBuffer(buf)
 }

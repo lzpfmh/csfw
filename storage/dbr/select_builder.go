@@ -54,6 +54,7 @@ func (tx *Tx) SelectBySql(query string, value ...interface{}) *SelectBuilder {
 
 func (b *SelectBuilder) ToSql() (string, []interface{}) {
 	buf := NewBuffer()
+	defer PutBuffer(buf)
 	err := b.Build(b.Dialect, buf)
 	if err != nil {
 		panic(err)

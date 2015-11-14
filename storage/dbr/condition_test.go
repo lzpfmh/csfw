@@ -69,5 +69,6 @@ func TestCondition(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, test.query, buf.String())
 		assert.Equal(t, test.value, buf.Value())
+		PutBuffer(buf)
 	}
 }

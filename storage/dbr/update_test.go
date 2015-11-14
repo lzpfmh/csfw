@@ -15,6 +15,7 @@ func TestUpdateStmt(t *testing.T) {
 
 	assert.Equal(t, "UPDATE `table` SET `a` = ? WHERE (`b` = ?)", buf.String())
 	assert.Equal(t, []interface{}{1, 2}, buf.Value())
+	PutBuffer(buf)
 }
 
 func BenchmarkUpdateValuesSQL(b *testing.B) {
@@ -22,6 +23,7 @@ func BenchmarkUpdateValuesSQL(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Update("table").Set("a", 1).Build(dialect.MySQL, buf)
 	}
+	PutBuffer(buf)
 }
 
 func BenchmarkUpdateMapSQL(b *testing.B) {
@@ -29,4 +31,5 @@ func BenchmarkUpdateMapSQL(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Update("table").SetMap(map[string]interface{}{"a": 1, "b": 2}).Build(dialect.MySQL, buf)
 	}
+	PutBuffer(buf)
 }

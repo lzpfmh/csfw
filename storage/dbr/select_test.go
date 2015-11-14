@@ -24,6 +24,7 @@ func TestSelectStmt(t *testing.T) {
 	assert.Equal(t, "SELECT DISTINCT a, b FROM ? LEFT JOIN `table2` ON table.a1 = table.a2 WHERE (`c` = ?) GROUP BY d HAVING (`e` = ?) ORDER BY f ASC LIMIT 3 OFFSET 4", buf.String())
 	// two functions cannot be compared
 	assert.Equal(t, 3, len(buf.Value()))
+	PutBuffer(buf)
 }
 
 func BenchmarkSelectSQL(b *testing.B) {
@@ -31,4 +32,5 @@ func BenchmarkSelectSQL(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Select("a", "b").From("table").Where(Eq("c", 1)).OrderAsc("d").Build(dialect.MySQL, buf)
 	}
+	PutBuffer(buf)
 }

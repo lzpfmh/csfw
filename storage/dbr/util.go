@@ -1,15 +1,16 @@
 package dbr
 
 import (
-	"bytes"
 	"database/sql/driver"
 	"reflect"
 	"unicode"
+
+	"github.com/corestoreio/csfw/utils/bufferpool"
 )
 
 func camelCaseToSnakeCase(name string) string {
-	buf := new(bytes.Buffer)
-
+	buf := bufferpool.Get()
+	defer bufferpool.Put(buf)
 	runes := []rune(name)
 
 	for i := 0; i < len(runes); i++ {

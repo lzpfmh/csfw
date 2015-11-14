@@ -57,6 +57,7 @@ func (tx *Tx) UpdateBySql(query string, value ...interface{}) *UpdateBuilder {
 
 func (b *UpdateBuilder) ToSql() (string, []interface{}) {
 	buf := NewBuffer()
+	defer PutBuffer(buf)
 	err := b.Build(b.Dialect, buf)
 	if err != nil {
 		panic(err)
