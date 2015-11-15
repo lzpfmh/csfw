@@ -1,7 +1,7 @@
 package dbr
 
 // Builder builds sql in one dialect like MySQL
-// e.g. XxxBuilder, Condition
+// e.g. XxxBuilder, Conditioner
 type Builder interface {
 	Build(Dialect, Buffer) error
 }

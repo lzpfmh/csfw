@@ -32,7 +32,7 @@ func Join(t JoinType, table interface{}, on interface{}) Builder {
 		switch on := on.(type) {
 		case string:
 			buf.WriteString(on)
-		case Condition:
+		case Conditioner:
 			buf.WriteString(d.Placeholder())
 			buf.WriteValue(on)
 		}
